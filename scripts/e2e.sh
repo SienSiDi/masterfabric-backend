@@ -23,6 +23,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 export PATH="/opt/homebrew/bin:$(go env GOPATH)/bin:$PATH"
 export DATABASE_DSN="postgres://masterfabric:masterfabric@127.0.0.1:5432/masterfabric?sslmode=disable"
+export JWT_SECRET="e2e-test-secret-do-not-use-in-production"
 export REDIS_URL="redis://127.0.0.1:6379"
 export LOG_FORMAT=text
 
