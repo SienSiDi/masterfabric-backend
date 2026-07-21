@@ -5,6 +5,7 @@ services:
     dockerfilePath: deployments/Dockerfile
     dockerContext: .
     region: oregon
+    plan: free
     healthCheckPath: /health/live
     envVars:
       - key: DATABASE_DSN
@@ -32,12 +33,11 @@ services:
   - type: keyvalue
     name: mf-masterfabric-redis
     region: oregon
-    ipAllowList:
-      - source: 0.0.0.0/0
-        description: allow all (private network)
+    plan: free
 
 databases:
   - name: mf-masterfabric-pg
     databaseName: masterfabric
     user: masterfabric
     region: oregon
+    plan: free
