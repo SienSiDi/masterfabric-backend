@@ -314,7 +314,7 @@ pass "POST /auth/change-password wrong current -> 401"
 # RBAC: PUT /admin/config with non-admin user -> 403
 status=$(curl -sS -o /tmp/body -w "%{http_code}" -X PUT http://127.0.0.1:8080/api/v1/admin/config \
   -H "Authorization: Bearer $ACCESS2" -H "Content-Type: application/json" \
-  -d '{"webllm":{"modelId":"gemma-2b-q4f32_1-MLC","modelUrl":"","estimatedBytes":0},"features":{"scoring":true,"monitoring":true},"limits":{"maxPromptChars":4000,"ratePerMin":30}}')
+  -d '{"webllm":{"modelId":"gemma-2-2b-it-q4f32_1-MLC","modelUrl":"","estimatedBytes":0},"features":{"scoring":true,"monitoring":true},"limits":{"maxPromptChars":4000,"ratePerMin":30}}')
 [[ "$status" == "403" ]] || fail "PUT /admin/config as non-admin -> $status (expected 403)"
 pass "PUT /admin/config as non-admin -> 403 FORBIDDEN (RBAC works)"
 
@@ -349,7 +349,7 @@ echo "=== Day 05 — Web MLC-LLM[7] part 1: models + session create/get ==="
 status=$(curl -sS -o /tmp/body -w "%{http_code}" http://127.0.0.1:8080/api/v1/llm/models \
   -H "Authorization: Bearer $ACCESS2")
 [[ "$status" == "200" ]] || fail "GET /llm/models -> $status (body: $(cat /tmp/body))"
-grep -q 'gemma-2b-q4f32_1-MLC' /tmp/body || fail "/llm/models missing Gemma"
+grep -q 'gemma-2-2b-it-q4f32_1-MLC' /tmp/body || fail "/llm/models missing Gemma"
 pass "GET /llm/models -> 200 (Gemma manifest)"
 
 # /llm/models without auth -> 401
@@ -360,7 +360,7 @@ pass "GET /llm/models without auth -> 401"
 # POST /llm/sessions
 SESS_RESP=$(curl -sS -w "\n%{http_code}" -X POST http://127.0.0.1:8080/api/v1/llm/sessions \
   -H "Authorization: Bearer $ACCESS2" -H "Content-Type: application/json" \
-  -d '{"modelId":"gemma-2b-q4f32_1-MLC","modelHash":"sha256:e2e-test"}')
+  -d '{"modelId":"gemma-2-2b-it-q4f32_1-MLC","modelHash":"sha256:e2e-test"}')
 SESS_STATUS=$(echo "$SESS_RESP" | tail -1)
 SESS_BODY=$(echo "$SESS_RESP" | sed '$d')
 [[ "$SESS_STATUS" == "201" ]] || fail "POST /llm/sessions -> $SESS_STATUS (body: $SESS_BODY)"
@@ -553,7 +553,7 @@ events = d["totals"]["events"]
 scored = d["totals"]["scoredEvents"]
 assert events >= 3, f"expected >=3 events, got {events}"
 assert scored >= 3, f"expected >=3 scored events, got {scored}"
-assert "gemma-2b-q4f32_1-MLC" in str(d["byModel"]), "missing gemma in byModel"
+assert "gemma-2-2b-it-q4f32_1-MLC" in str(d["byModel"]), "missing gemma in byModel"
 print(f"  totals: {d['totals']}")
 print(f"  latency: {d['latency']}")
 print(f"  scores: {d['scores']}")
