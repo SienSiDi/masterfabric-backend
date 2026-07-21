@@ -44,20 +44,11 @@ func (uc *RecordScoreUseCase) Execute(ctx context.Context, userID uuid.UUID, ses
 	}
 
 	// 2. The event must belong to this session (look it up by id)
-	// We don't have a FindByID on EventRepository yet — use ListBySession and find it.
-	// For efficiency we could add FindByID, but for MVP this is fine (events per session are small).
-	evs, _, err := uc.eventRepo.ListBySession(ctx, sessionID, 1000, 0)
+	ev, err := uc.eventRepo.FindByID(ctx, req.EventID)
 	if err != nil {
-		return err
+		return domainerr.New(domainerr.CodeNotFound, "event not found", err)
 	}
-	var found bool
-	for _, e := range evs {
-		if e.ID == req.EventID {
-			found = true
-			break
-		}
-	}
-	if !found {
+	if ev.SessionID != sessionID {
 		return domainerr.New(domainerr.CodeNotFound, "event not found in this session", nil)
 	}
 

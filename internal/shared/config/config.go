@@ -1,7 +1,7 @@
 package config
 
 import (
-	"log/slog"
+	"fmt"
 	"net/url"
 	"os"
 	"strconv"
@@ -67,16 +67,16 @@ func Load() (*Config, error) {
 			IdleTimeout:  time.Duration(getEnvInt("SERVER_IDLE_TIMEOUT_SECONDS", 60)) * time.Second,
 		},
 		DB: DBConfig{
-			DSN:      getEnv("DATABASE_DSN", "postgres://masterfabric:masterfabric@localhost:5432/masterfabric?sslmode=disable"),
+			DSN:      getEnvOrFatal("DATABASE_DSN"),
 			MaxConns: envOrDefaultInt32("DB_MAX_CONNS", 25),
 			MinConns: envOrDefaultInt32("DB_MIN_CONNS", 5),
-			SSLMode:  getEnv("DB_SSLMODE", "disable"),
+			SSLMode:  getEnv("DB_SSLMODE", "require"),
 		},
 		Redis: RedisConfig{
 			URL: getEnv("REDIS_URL", "redis://localhost:6379"),
 		},
 		JWT: JWTConfig{
-			Secret:     getEnv("JWT_SECRET", "change-me-in-production"),
+			Secret:     getEnvOrFatal("JWT_SECRET"),
 			AccessTTL:  time.Duration(getEnvInt("JWT_ACCESS_TTL_MINUTES", 15)) * time.Minute,
 			RefreshTTL: time.Duration(getEnvInt("JWT_REFRESH_TTL_HOURS", 168)) * time.Hour,
 		},
@@ -96,10 +96,6 @@ func Load() (*Config, error) {
 		return nil, &url.Error{Op: "parse", URL: "DATABASE_DSN", Err: err}
 	}
 
-	if cfg.JWT.Secret == "change-me-in-production" {
-		slog.Warn("JWT_SECRET is set to the default value; change it before production")
-	}
-
 	return cfg, nil
 }
 
@@ -108,6 +104,15 @@ func getEnv(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+func getEnvOrFatal(key string) string {
+	if v, ok := os.LookupEnv(key); ok {
+		return v
+	}
+	fmt.Fprintf(os.Stderr, "FATAL: required environment variable %s is not set\n", key)
+	os.Exit(1)
+	return "" // unreachable
 }
 
 func getEnvInt(key string, fallback int) int {

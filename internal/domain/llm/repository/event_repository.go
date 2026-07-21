@@ -10,5 +10,6 @@ import (
 
 type EventRepository interface {
 	Create(ctx context.Context, e *model.InferenceEvent) (*model.InferenceEvent, error)
+	FindByID(ctx context.Context, id uuid.UUID) (*model.InferenceEvent, error)
 	ListBySession(ctx context.Context, sessionID uuid.UUID, limit, offset int) ([]model.InferenceEvent, int, error)
 }

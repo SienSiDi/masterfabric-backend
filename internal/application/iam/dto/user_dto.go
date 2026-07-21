@@ -8,7 +8,7 @@ import (
 
 type RegisterRequest struct {
 	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,min=12"`
+	Password string `json:"password" validate:"required,min=12,max=128"`
 }
 
 type RegisterResponse struct {
@@ -18,7 +18,7 @@ type RegisterResponse struct {
 
 type LoginRequest struct {
 	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required"`
+	Password string `json:"password" validate:"required,max=128"`
 }
 
 type UserDTO struct {
@@ -41,8 +41,9 @@ type RefreshRequest struct {
 }
 
 type RefreshResponse struct {
-	AccessToken string `json:"accessToken"`
-	ExpiresIn   int    `json:"expiresIn"`
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken,omitempty"`
+	ExpiresIn    int    `json:"expiresIn"`
 }
 
 // Logout

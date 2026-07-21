@@ -12,41 +12,55 @@ import (
 	"github.com/masterfabric/masterfabric_backend/internal/shared/response"
 )
 
-// RateLimiter is a Redis-backed fixed-window counter.
+// RateLimiter is a Redis-backed fixed-window counter using a Lua script for atomicity.
 type RateLimiter struct {
 	client *redis.Client
+	script *redis.Script
 }
+
+var rateLimitScript = redis.NewScript(`
+local key = KEYS[1]
+local limit = tonumber(ARGV[1])
+local window_ms = tonumber(ARGV[2])
+
+local current = redis.call("INCR", key)
+if current == 1 then
+    redis.call("PEXPIRE", key, window_ms)
+end
+
+local remaining = limit - current
+if remaining < 0 then
+    remaining = 0
+end
+
+local pttl = redis.call("PTTL", key)
+local reset_at = math.floor((pttl / 1000) + (ARGV[3] / 1000))
+
+return {current, remaining, reset_at}
+`)
 
 func NewRateLimiter(client *redis.Client) *RateLimiter {
-	return &RateLimiter{client: client}
+	return &RateLimiter{client: client, script: rateLimitScript}
 }
 
-// Allow checks whether the key is within the limit for the window. If allowed,
-// it increments the counter and returns true. If over limit, returns false.
-// If Redis is unavailable, always returns true (fail open).
+// Allow checks whether the key is within the limit for the window.
+// Uses a single Lua script for atomic INCR+EXPIRE+TTL (1 RTT instead of 3).
 func (rl *RateLimiter) Allow(r *http.Request, key string, limit int, window time.Duration) (bool, int, int64) {
 	if rl.client == nil {
-		return true, limit, 0 // fail open — no rate limiting without Redis
+		return true, limit, 0
 	}
 	ctx := r.Context()
 	fullKey := "mf:rl:" + key
-	count, err := rl.client.Incr(ctx, fullKey).Result()
+	now := time.Now().UnixMilli()
+	result, err := rl.script.Run(ctx, rl.client, []string{fullKey},
+		limit, window.Milliseconds(), now).Int64Slice()
 	if err != nil {
-		return true, limit, 0 // fail open
+		return true, limit, 0
 	}
-	if count == 1 {
-		_ = rl.client.Expire(ctx, fullKey, window).Err()
-	}
-	ttl, _ := rl.client.TTL(ctx, fullKey).Result()
-	remaining := limit - int(count)
-	if remaining < 0 {
-		remaining = 0
-	}
-	resetAt := time.Now().Add(ttl).Unix()
-	if int(count) > limit {
-		return false, 0, resetAt
-	}
-	return true, remaining, resetAt
+	count := int(result[0])
+	remaining := int(result[1])
+	resetAt := result[2]
+	return count <= limit, remaining, resetAt
 }
 
 // RateLimit returns middleware that rate-limits requests using a Redis fixed-window counter.

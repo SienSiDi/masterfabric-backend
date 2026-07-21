@@ -113,11 +113,10 @@ func (uc *RefreshUseCase) Execute(ctx context.Context, req dto.RefreshRequest) (
 		return dto.RefreshResponse{}, domainerr.New(domainerr.CodeInternal, "generate access token", err)
 	}
 
-	// Note: we return only a new access token (and rotate the refresh silently).
-	// Caller keeps using the new refresh token returned here.
 	return dto.RefreshResponse{
-		AccessToken: accessToken,
-		ExpiresIn:   expiresIn,
+		AccessToken:  accessToken,
+		RefreshToken: rawNew,
+		ExpiresIn:    expiresIn,
 	}, nil
 }
 

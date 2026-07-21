@@ -2,9 +2,12 @@ package router
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -69,6 +72,8 @@ func New(deps Deps) http.Handler {
 
 	authMW := middleware.Auth(deps.Jwt)
 	loginLimitMW := middleware.RateLimit(deps.RateLimiter, loginRateKey, 5, time.Minute)
+	registerLimitMW := middleware.RateLimit(deps.RateLimiter, registerRateKey, 3, time.Minute)
+	refreshLimitMW := middleware.RateLimit(deps.RateLimiter, refreshRateKey, 10, time.Minute)
 
 	r.Get("/health/live", cmnH.Live)
 	r.Get("/health/ready", cmnH.Ready)
@@ -79,9 +84,9 @@ func New(deps Deps) http.Handler {
 		r.With(authMW, middleware.RequirePermission(deps.PermResolver, "config:write")).Put("/admin/config", cfgH.Update)
 
 		r.Route("/auth", func(r chi.Router) {
-			r.Post("/register", authH.Register)
+			r.With(registerLimitMW).Post("/register", authH.Register)
 			r.With(loginLimitMW).Post("/login", authH.Login)
-			r.Post("/refresh", authH.Refresh)
+			r.With(refreshLimitMW).Post("/refresh", authH.Refresh)
 			r.With(authMW).Post("/logout", authH.Logout)
 			r.With(authMW).Post("/change-password", meH.ChangePassword)
 		})
@@ -138,10 +143,51 @@ func loginRateKey(r *http.Request) string {
 // clientIP extracts the client IP from RemoteAddr (set by chimw.RealIP middleware).
 func clientIP(r *http.Request) string {
 	host := r.RemoteAddr
-	if i := bytes.IndexByte([]byte(host), ':'); i >= 0 {
+	if i := strings.IndexByte(host, ':'); i >= 0 {
 		host = host[:i]
 	}
 	return host
+}
+
+// registerRateKey extracts rate-limit key from the registration request body.
+func registerRateKey(r *http.Request) string {
+	if r.Body == nil {
+		return "register:ip:" + clientIP(r)
+	}
+	raw, err := io.ReadAll(io.LimitReader(r.Body, 512))
+	r.Body.Close()
+	r.Body = io.NopCloser(bytes.NewReader(raw))
+	if err == nil && len(raw) > 0 {
+		var body struct {
+			Email string `json:"email"`
+		}
+		_ = json.Unmarshal(raw, &body)
+		if body.Email != "" {
+			return "register:" + body.Email
+		}
+	}
+	return "register:ip:" + clientIP(r)
+}
+
+// refreshRateKey rate-limits refresh token requests by token hash.
+func refreshRateKey(r *http.Request) string {
+	if r.Body == nil {
+		return "refresh:ip:" + clientIP(r)
+	}
+	raw, err := io.ReadAll(io.LimitReader(r.Body, 512))
+	r.Body.Close()
+	r.Body = io.NopCloser(bytes.NewReader(raw))
+	if err == nil && len(raw) > 0 {
+		var body struct {
+			RefreshToken string `json:"refreshToken"`
+		}
+		_ = json.Unmarshal(raw, &body)
+		if body.RefreshToken != "" {
+			h := sha256.Sum256([]byte(body.RefreshToken))
+			return "refresh:" + hex.EncodeToString(h[:8])
+		}
+	}
+	return "refresh:ip:" + clientIP(r)
 }
 
 // eventRateKey rate-limits event recording per user (user_id is in the JWT context,

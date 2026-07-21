@@ -33,16 +33,18 @@ func (r *EventRepository) Create(ctx context.Context, e *llmmodel.InferenceEvent
 	return scanEvent(row)
 }
 
-func (r *EventRepository) ListBySession(ctx context.Context, sessionID uuid.UUID, limit, offset int) ([]llmmodel.InferenceEvent, int, error) {
-	// Total count first
-	var total int
-	err := r.pool.QueryRow(ctx, `SELECT count(*) FROM inference_events WHERE session_id = $1`, sessionID).Scan(&total)
-	if err != nil {
-		return nil, 0, domainerr.New(domainerr.CodeInternal, "count events", fmt.Errorf("count inference_events: %w", err))
-	}
-
-	rows, err := r.pool.Query(ctx, `
+func (r *EventRepository) FindByID(ctx context.Context, id uuid.UUID) (*llmmodel.InferenceEvent, error) {
+	row := r.pool.QueryRow(ctx, `
 		SELECT id, session_id, user_id, prompt, completion, tokens_in, tokens_out, latency_ms, error, created_at
+		FROM inference_events WHERE id = $1
+	`, id)
+	return scanEvent(row)
+}
+
+func (r *EventRepository) ListBySession(ctx context.Context, sessionID uuid.UUID, limit, offset int) ([]llmmodel.InferenceEvent, int, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT id, session_id, user_id, prompt, completion, tokens_in, tokens_out, latency_ms, error, created_at,
+		       COUNT(*) OVER() AS total_count
 		FROM inference_events
 		WHERE session_id = $1
 		ORDER BY created_at DESC
@@ -54,12 +56,14 @@ func (r *EventRepository) ListBySession(ctx context.Context, sessionID uuid.UUID
 	defer rows.Close()
 
 	var out []llmmodel.InferenceEvent
+	var total int
 	for rows.Next() {
-		e, err := scanEvent(rows)
-		if err != nil {
+		var e llmmodel.InferenceEvent
+		if err := rows.Scan(&e.ID, &e.SessionID, &e.UserID, &e.Prompt, &e.Completion,
+			&e.TokensIn, &e.TokensOut, &e.LatencyMs, &e.Error, &e.CreatedAt, &total); err != nil {
 			return nil, 0, domainerr.New(domainerr.CodeInternal, "scan event", err)
 		}
-		out = append(out, *e)
+		out = append(out, e)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, 0, domainerr.New(domainerr.CodeInternal, "iterate events", err)

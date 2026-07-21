@@ -33,6 +33,17 @@ func (m *mockEventRepo) Create(_ context.Context, e *llmmodel.InferenceEvent) (*
 	return e, nil
 }
 
+func (m *mockEventRepo) FindByID(_ context.Context, id uuid.UUID) (*llmmodel.InferenceEvent, error) {
+	for _, evs := range m.bySession {
+		for _, e := range evs {
+			if e.ID == id {
+				return e, nil
+			}
+		}
+	}
+	return nil, domainerr.New(domainerr.CodeNotFound, "event not found", nil)
+}
+
 func (m *mockEventRepo) ListBySession(_ context.Context, sessionID uuid.UUID, limit, offset int) ([]llmmodel.InferenceEvent, int, error) {
 	all := m.bySession[sessionID]
 	total := len(all)

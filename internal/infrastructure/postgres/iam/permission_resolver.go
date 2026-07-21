@@ -53,12 +53,12 @@ func (r *PermissionResolver) Refresh(ctx context.Context) error {
 func (r *PermissionResolver) PermissionsForRoles(_ context.Context, roleNames []string) ([]string, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	seen := make(map[string]bool)
-	out := make([]string, 0)
+	seen := make(map[string]struct{}, 16)
+	out := make([]string, 0, 16)
 	for _, rn := range roleNames {
 		for _, p := range r.cache[rn] {
-			if !seen[p] {
-				seen[p] = true
+			if _, exists := seen[p]; !exists {
+				seen[p] = struct{}{}
 				out = append(out, p)
 			}
 		}
