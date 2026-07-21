@@ -1,0 +1,21 @@
+---
+description: Recipe for adding a new use case
+globs: "**/usecase/**/*.go"
+alwaysApply: false
+---
+
+# Create Use Case
+
+When adding a use case in `internal/application/<context>/usecase/`:
+
+1. File: `<action>_<entity>.go` (e.g., `register_user.go`).
+2. DTO in `internal/application/<context>/dto/<entity>_dto.go`.
+3. Struct with dependencies (repository, event bus, etc.) injected via constructor.
+4. Constructor: `NewXxxUseCase(repo, eventBus) *XxxUseCase`.
+5. Method: `Execute(ctx context.Context, req Req) (Resp, error)`.
+6. Validate input at the top; return `domainerr.New(domainerr.CodeBadRequest, ...)` on invalid input.
+7. Call repository; map `pgx.ErrNoRows` / domain errors — do not leak infrastructure errors.
+8. Publish domain events after successful state changes (from Day 02 when event bus is wired).
+9. Return the result DTO or domain model.
+
+Never import `infrastructure` from a use case.

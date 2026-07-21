@@ -1,0 +1,6 @@
+/bin/
+/masterfabric-server
+.env
+*.log
+vendor/
+.air-masterfabric-backend/

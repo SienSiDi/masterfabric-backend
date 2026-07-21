@@ -1,0 +1,27 @@
+---
+description: Error handling and HTTP status mapping
+globs: "**/*.go"
+alwaysApply: false
+---
+
+# Error Handling
+
+- Return `error` as the last return value.
+- Use `domainerr.New(code, message, cause)` for domain errors from `internal/shared/errors`.
+- Wrap infrastructure errors with context: `fmt.Errorf("failed to X: %w", err)`.
+- Check errors immediately after function calls.
+- In handlers: call `response.Error(w, err)` — it maps `DomainError.Code` to HTTP status.
+
+## Status mapping
+
+| Code | HTTP |
+|------|------|
+| `NOT_FOUND` | 404 |
+| `INVALID_INPUT` | 400 |
+| `UNAUTHORIZED` | 401 |
+| `FORBIDDEN` | 403 |
+| `CONFLICT` | 409 |
+| `INTERNAL` | 500 |
+
+- Generic client message is sent to the caller; full detail (with cause) goes to `slog` only (CWE-209).
+- `/health/ready` returns generic `unhealthy` markers, never raw error strings.

@@ -1,0 +1,24 @@
+---
+description: Configuration management — env vars, config loading, secrets handling
+globs: ["**/config/**/*.go", "**/.env*", "**/main.go"]
+alwaysApply: false
+---
+
+# Create Config
+
+When adding or reading configuration in `masterfabric_backend`:
+
+- All config via environment variables (no hardcoded values).
+- `internal/shared/config/config.go` is the single loader; add new fields there.
+- Use `getEnv(key, fallback)` for strings, `getEnvInt` for ints, `envOrDefaultInt32` for int32 (gosec G115).
+- DSN is parsed via `net/url` (passwords with `@:/?#%` are safe).
+- Sensible defaults for development; `.env.example` maintained with all required vars.
+- Secrets (`JWT_SECRET`, `DATABASE_DSN`, `REDIS_URL`) never logged or exposed in error responses.
+- Startup warns when `JWT_SECRET == "change-me-in-production"`.
+
+## Checklist
+- [ ] All config via env vars
+- [ ] Sensible defaults for development
+- [ ] Connection pooling configured (`DB_MAX_CONNS`, `DB_MIN_CONNS`)
+- [ ] `.env.example` maintained
+- [ ] Secrets never logged or exposed in errors

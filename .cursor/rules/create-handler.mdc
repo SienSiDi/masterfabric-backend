@@ -1,0 +1,19 @@
+---
+description: Recipe for adding a new HTTP handler
+globs: "**/handler/**/*.go"
+alwaysApply: false
+---
+
+# Create Handler
+
+When adding an HTTP handler in `internal/infrastructure/http/handler/<context>/`:
+
+1. Constructor takes use cases (+ repositories if needed for reads).
+2. Use `chi.URLParam(r, "paramName")` for path params.
+3. Parse body with `validator.DecodeAndValidate(r, &req)` for validated inputs, or `json.NewDecoder(r.Body).Decode(&req)` for thin handlers.
+4. Return via `response.JSON(w, status, body)`, `response.Created(w, body)`, `response.NoContent(w)`.
+5. On error: `response.Error(w, err)` — pass the domain error through; do not format messages here.
+6. Register route in `internal/infrastructure/http/router/router.go` under `r.Route("/api/v1", ...)`.
+
+Required headers for protected routes: `Authorization: Bearer <jwt>` (enforced by `middleware.Auth` from Day 03).
+Admin routes: wrap with `r.With(middleware.RequirePermission("perm:write"))`.

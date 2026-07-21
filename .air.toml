@@ -1,0 +1,12 @@
+root = "."
+tmp_dir = ".air-masterfabric-backend"
+
+[build]
+cmd = "go build -o ./tmp/masterfabric-server ./cmd/server"
+bin = "./tmp/masterfabric-server"
+include_ext = ["go"]
+exclude_dir = ["tmp", "deployments", "scripts", "postman"]
+delay = 300
+
+[log]
+time = true

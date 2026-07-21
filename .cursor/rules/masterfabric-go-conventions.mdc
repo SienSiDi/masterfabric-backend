@@ -1,0 +1,17 @@
+---
+description: masterfabric_backend naming, layers, and error handling conventions
+globs: "**/*.go"
+alwaysApply: true
+---
+
+# masterfabric_backend Conventions
+
+- Domain -> Application -> Infrastructure (strict dependency rule; domain imports nothing external).
+- Files: `snake_case.go`; packages: `lowercase` (single word).
+- Interfaces: descriptive, no `I` prefix (`UserRepository`, not `IUserRepository`).
+- Constructors: `NewXxx()` returning pointer.
+- Use cases: `Execute(ctx, req) (resp, error)` pattern.
+- Errors: `domainerr.New(code, message, cause)` from `internal/shared/errors`; wrap with `fmt.Errorf("...: %w", err)`.
+- `response.Error` never sends `err.Error()` to the client (CWE-209); full detail goes to `slog`.
+- Multi-tenancy: not used in MVP; structure kept for parity.
+- After schema changes: run `goose -dir internal/infrastructure/postgres/migrations postgres "$DATABASE_DSN" up`.

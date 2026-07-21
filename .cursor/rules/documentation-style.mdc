@@ -1,0 +1,14 @@
+---
+description: Markdown and code-reference style for docs and reports
+globs: ["**/*.md", "**/*.mdc"]
+alwaysApply: false
+---
+
+# Documentation Style
+
+- Concise, action-oriented, operator voice. No marketing fluff.
+- Tables for structured data; Mermaid for diagrams; code fences for paths + commands + JSON.
+- Reference code with `file_path:line_number` (e.g., `internal/application/llm/usecase/get_monitoring.go:42`).
+- Reference external repos with absolute GitHub URLs.
+- Keep component docs under 100 lines (per `base-pattern-documentation` skill).
+- End spec files with a `## Related` block linking back to `README.md` and sibling specs.
