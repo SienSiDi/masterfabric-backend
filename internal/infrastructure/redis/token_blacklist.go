@@ -22,10 +22,12 @@ func NewTokenBlacklist(client *redis.Client) *TokenBlacklist {
 func blacklistKey(tokenHash string) string { return "mf:revoked:" + tokenHash }
 
 // Revoke adds the token hash to the blacklist with the given TTL.
-// After the TTL elapses the entry evaporates (token would be expired anyway).
+// If Redis is unavailable, this is a no-op (server runs without blacklist).
 func (b *TokenBlacklist) Revoke(ctx context.Context, tokenHash string, ttl time.Duration) error {
+	if b.client == nil {
+		return nil
+	}
 	if ttl <= 0 {
-		// token already expired — nothing to blacklist
 		return nil
 	}
 	if err := b.client.Set(ctx, blacklistKey(tokenHash), "1", ttl).Err(); err != nil {
@@ -35,10 +37,14 @@ func (b *TokenBlacklist) Revoke(ctx context.Context, tokenHash string, ttl time.
 }
 
 // IsRevoked reports whether the token hash is on the blacklist.
+// If Redis is unavailable, returns false (fail open — don't block users).
 func (b *TokenBlacklist) IsRevoked(ctx context.Context, tokenHash string) (bool, error) {
+	if b.client == nil {
+		return false, nil
+	}
 	n, err := b.client.Exists(ctx, blacklistKey(tokenHash)).Result()
 	if err != nil {
-		return false, fmt.Errorf("check blacklist: %w", err)
+		return false, nil // fail open
 	}
 	return n > 0, nil
 }

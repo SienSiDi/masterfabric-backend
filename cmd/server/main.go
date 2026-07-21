@@ -48,10 +48,12 @@ func main() {
 
 	rdb, err := redisclient.NewClient(ctx, cfg.Redis.URL)
 	if err != nil {
-		log.Error("failed to connect redis", "error", err)
-		os.Exit(1)
+		log.Warn("redis not available — rate limiting + token blacklist disabled", "error", err)
+		rdb = nil
 	}
-	defer rdb.Close()
+	if rdb != nil {
+		defer rdb.Close()
+	}
 
 	blacklist := redisclient.NewTokenBlacklist(rdb)
 	rateLimiter := middleware.NewRateLimiter(rdb)

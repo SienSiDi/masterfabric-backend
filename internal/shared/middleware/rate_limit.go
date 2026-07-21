@@ -23,14 +23,16 @@ func NewRateLimiter(client *redis.Client) *RateLimiter {
 
 // Allow checks whether the key is within the limit for the window. If allowed,
 // it increments the counter and returns true. If over limit, returns false.
-// It also sets the X-RateLimit-* headers on the response.
+// If Redis is unavailable, always returns true (fail open).
 func (rl *RateLimiter) Allow(r *http.Request, key string, limit int, window time.Duration) (bool, int, int64) {
+	if rl.client == nil {
+		return true, limit, 0 // fail open — no rate limiting without Redis
+	}
 	ctx := r.Context()
 	fullKey := "mf:rl:" + key
 	count, err := rl.client.Incr(ctx, fullKey).Result()
 	if err != nil {
-		// fail open — don't block on Redis errors
-		return true, limit, 0
+		return true, limit, 0 // fail open
 	}
 	if count == 1 {
 		_ = rl.client.Expire(ctx, fullKey, window).Err()
