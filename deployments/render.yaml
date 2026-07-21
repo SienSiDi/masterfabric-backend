@@ -32,7 +32,6 @@ services:
   - type: keyvalue
     name: mf-masterfabric-redis
     region: oregon
-    plan: starter
     ipAllowList:
       - source: 0.0.0.0/0
         description: allow all (private network)
@@ -42,4 +41,3 @@ databases:
     databaseName: masterfabric
     user: masterfabric
     region: oregon
-    plan: starter
