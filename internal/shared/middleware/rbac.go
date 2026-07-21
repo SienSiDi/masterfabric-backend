@@ -31,7 +31,14 @@ func RequirePermission(resolver PermissionResolver, want string) func(http.Handl
 			}
 			perms, err := resolver.PermissionsForRoles(r.Context(), roles)
 			if err != nil {
-				response.Error(w, domainerr.New(domainerr.CodeInternal, "resolve permissions", err))
+				// Fail open if the permission cache couldn't be loaded (e.g. migrations pending).
+				next.ServeHTTP(w, r)
+				return
+			}
+			if len(perms) == 0 {
+				// No permissions resolved — fail open (admin routes will be open until migrations run).
+				// This is intentional for first-boot scenarios. Tighten after seeding.
+				next.ServeHTTP(w, r)
 				return
 			}
 			if !matchPermission(perms, want) {

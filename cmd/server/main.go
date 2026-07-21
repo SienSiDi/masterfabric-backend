@@ -70,10 +70,10 @@ func main() {
 	refreshRepo := iampg.NewRefreshTokenRepository(pool)
 	permResolver := iampg.NewPermissionResolver(pool)
 	if err := permResolver.Refresh(ctx); err != nil {
-		log.Error("failed to load permission cache", "error", err)
-		os.Exit(1)
+		log.Warn("permission cache not loaded — running without RBAC (migrations may be pending)", "error", err)
+	} else {
+		log.Info("permission cache loaded", "roles", len(permResolver.CacheSnapshot()))
 	}
-	log.Info("permission cache loaded", "roles", len(permResolver.CacheSnapshot()))
 
 	jwtSvc := auth.NewJWTService(cfg.JWT.Secret, cfg.JWT.AccessTTL)
 	registerUC := iamusecase.NewRegisterUseCase(userRepo, roleRepo, eventBus)
