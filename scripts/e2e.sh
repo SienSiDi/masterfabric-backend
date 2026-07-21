@@ -95,11 +95,6 @@ grep -q '"postgres":"healthy"' /tmp/body || fail "/health/ready postgres not hea
 grep -q '"redis":"healthy"' /tmp/body || fail "/health/ready redis not healthy"
 pass "GET /health/ready -> 200 {postgres+redis healthy}"
 
-status=$(curl -sS -o /tmp/body -w "%{http_code}" http://127.0.0.1:8080/metrics)
-[[ "$status" == "200" ]] || fail "GET /metrics -> $status"
-grep -q "http_requests_total" /tmp/body || fail "/metrics no prometheus output"
-pass "GET /metrics -> 200 (Prometheus text)"
-
 status=$(curl -sS -o /tmp/body -w "%{http_code}" http://127.0.0.1:8080/api/v1/config)
 [[ "$status" == "200" ]] || fail "GET /api/v1/config -> $status"
 grep -q 'gemma' /tmp/body || fail "/config no gemma model"
@@ -148,6 +143,12 @@ EXPIRES=$(python3 -c 'import sys,json; print(json.load(open("/tmp/body"))["expir
 [[ -n "$REFRESH" ]] || fail "no refreshToken in login response"
 [[ "$EXPIRES" == "900" ]] || fail "expiresIn=$EXPIRES (expected 900)"
 pass "POST /auth/login -> 200 (accessToken + refreshToken + expiresIn=900)"
+
+# /metrics (auth required since security hardening)
+status=$(curl -sS -o /tmp/body -w "%{http_code}" http://127.0.0.1:8080/metrics -H "Authorization: Bearer $ACCESS")
+[[ "$status" == "200" ]] || fail "GET /metrics -> $status"
+grep -q "http_requests_total" /tmp/body || fail "/metrics no prometheus output"
+pass "GET /metrics -> 200 (Prometheus text)"
 
 # Login wrong password -> 401
 status=$(curl -sS -o /tmp/body -w "%{http_code}" -X POST http://127.0.0.1:8080/api/v1/auth/login \
@@ -561,8 +562,8 @@ PY
 pass "GET /llm/monitoring as admin -> 200 (totals + latency + tokens + scores + byModel)"
 
 # Verify Prometheus has the new metrics
-curl -sS http://127.0.0.1:8080/metrics | grep -q "llm_events_total" || fail "missing llm_events_total in /metrics"
-curl -sS http://127.0.0.1:8080/metrics | grep -q "llm_decision_score_sum" || fail "missing llm_decision_score_sum in /metrics"
+curl -sS http://127.0.0.1:8080/metrics -H "Authorization: Bearer $ACCESS" | grep -q "llm_events_total" || fail "missing llm_events_total in /metrics"
+curl -sS http://127.0.0.1:8080/metrics -H "Authorization: Bearer $ACCESS" | grep -q "llm_decision_score_sum" || fail "missing llm_decision_score_sum in /metrics"
 pass "Prometheus metrics include llm_events_total + llm_decision_score_sum"
 
 # --- 10. Summary ---
