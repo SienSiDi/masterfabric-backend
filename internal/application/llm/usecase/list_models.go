@@ -15,8 +15,8 @@ func NewListModelsUseCase() *ListModelsUseCase { return &ListModelsUseCase{} }
 // For MVP this is a static list — future: load from app_config.
 func (uc *ListModelsUseCase) Execute(_ context.Context) (dto.ListModelsResponse, error) {
 	models := []llmmodel.ModelManifest{
-		{ID: "gemma-2b-q4f32_1-MLC", EstimatedBytes: 1_640_000_000, Recommended: true},
-		{ID: "gemma-2b-it-q4f16_1-MLC", EstimatedBytes: 1_800_000_000, Recommended: false},
+		{ID: "gemma-2-2b-it-q4f32_1-MLC", EstimatedBytes: 2_508_000_000, Recommended: true},
+		{ID: "gemma-2-2b-it-q4f16_1-MLC", EstimatedBytes: 2_700_000_000, Recommended: false},
 	}
 	out := make([]dto.ModelDTO, 0, len(models))
 	for _, m := range models {

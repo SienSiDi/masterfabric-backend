@@ -51,7 +51,7 @@ func TestCreateSessionUseCase_Execute(t *testing.T) {
 
 	userID := uuid.New()
 	resp, err := uc.Execute(context.Background(), userID, dto.CreateSessionRequest{
-		ModelID:   "gemma-2b-q4f32_1-MLC",
+		ModelID:   "gemma-2-2b-it-q4f32_1-MLC",
 		ModelHash: "sha256:abc123",
 	})
 	if err != nil {
@@ -60,8 +60,8 @@ func TestCreateSessionUseCase_Execute(t *testing.T) {
 	if resp.ID == uuid.Nil {
 		t.Error("expected non-zero session ID")
 	}
-	if resp.ModelID != "gemma-2b-q4f32_1-MLC" {
-		t.Errorf("expected modelId gemma-2b-q4f32_1-MLC, got %s", resp.ModelID)
+	if resp.ModelID != "gemma-2-2b-it-q4f32_1-MLC" {
+		t.Errorf("expected modelId gemma-2-2b-it-q4f32_1-MLC, got %s", resp.ModelID)
 	}
 	if resp.ModelHash != "sha256:abc123" {
 		t.Errorf("expected modelHash sha256:abc123, got %s", resp.ModelHash)
@@ -88,7 +88,7 @@ func TestCreateSessionUseCase_DefaultModel(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create session: %v", err)
 	}
-	if resp.ModelID != "gemma-2b-q4f32_1-MLC" {
+	if resp.ModelID != "gemma-2-2b-it-q4f32_1-MLC" {
 		t.Errorf("expected default model, got %s", resp.ModelID)
 	}
 }
@@ -102,7 +102,7 @@ func TestGetSessionUseCase_Execute(t *testing.T) {
 
 	// Seed a session
 	sess := &llmmodel.Session{
-		ID: uuid.New(), UserID: userID, ModelID: "gemma-2b-q4f32_1-MLC",
+		ID: uuid.New(), UserID: userID, ModelID: "gemma-2-2b-it-q4f32_1-MLC",
 		CreatedAt: time.Now().UTC(),
 	}
 	sessionRepo.byID[sess.ID] = sess

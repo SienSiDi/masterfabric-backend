@@ -25,8 +25,8 @@ type Limits struct {
 func Default() AppConfig {
 	return AppConfig{
 		WebLLM: WebLLMConfig{
-			ModelID:        "gemma-2b-q4f32_1-MLC",
-			ModelURL:       "https://huggingface.co/mlc-ai/Gemma-2B-q4f32_1-MLC/resolve/main/",
+			ModelID:        "gemma-2-2b-it-q4f32_1-MLC",
+			ModelURL:       "https://huggingface.co/mlc-ai/gemma-2-2b-it-q4f32_1-MLC/resolve/main/",
 			EstimatedBytes: 1_640_000_000,
 		},
 		Features: Features{Scoring: true, Monitoring: true},

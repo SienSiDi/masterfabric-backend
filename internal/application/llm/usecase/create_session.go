@@ -26,7 +26,7 @@ func (uc *CreateSessionUseCase) Execute(ctx context.Context, userID uuid.UUID, r
 	modelID := strings.TrimSpace(req.ModelID)
 	if modelID == "" {
 		// validator should catch this, but double-check at the use case boundary
-		modelID = "gemma-2b-q4f32_1-MLC"
+		modelID = "gemma-2-2b-it-q4f32_1-MLC"
 	}
 	now := time.Now().UTC()
 	session := &llmmodel.Session{

@@ -57,7 +57,7 @@ func TestRecordScoreUseCase_Execute(t *testing.T) {
 
 	userID := uuid.New()
 	session := &llmmodel.Session{
-		ID: uuid.New(), UserID: userID, ModelID: "gemma-2b-q4f32_1-MLC",
+		ID: uuid.New(), UserID: userID, ModelID: "gemma-2-2b-it-q4f32_1-MLC",
 		CreatedAt: time.Now().UTC(),
 	}
 	sessionRepo.byID[session.ID] = session
