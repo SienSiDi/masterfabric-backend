@@ -1,3 +1,4 @@
+![Description of image](masterfabric-academy-badge.png)
 # masterfabric_backend
 
 ![Go](https://img.shields.io/badge/Go-1.22+-00ADD8?logo=go&logoColor=white)
