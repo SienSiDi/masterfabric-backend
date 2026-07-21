@@ -2,9 +2,8 @@ services:
   - type: web
     runtime: docker
     name: mf-masterfabric-backend
-    rootDir: masterfabric_backend
-    dockerfilePath: masterfabric_backend/deployments/Dockerfile
-    dockerContext: masterfabric_backend
+    dockerfilePath: deployments/Dockerfile
+    dockerContext: .
     region: oregon
     healthCheckPath: /health/live
     envVars:
