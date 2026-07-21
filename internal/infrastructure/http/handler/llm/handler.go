@@ -162,16 +162,21 @@ func (h *Handler) RecordScore(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) GetMonitoring(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
+	now := time.Now().UTC()
 	var from, to time.Time
 	if v := q.Get("from"); v != "" {
 		if parsed, err := time.Parse(time.RFC3339, v); err == nil {
 			from = parsed
 		}
+	} else {
+		from = now.Add(-24 * time.Hour)
 	}
 	if v := q.Get("to"); v != "" {
 		if parsed, err := time.Parse(time.RFC3339, v); err == nil {
 			to = parsed
 		}
+	} else {
+		to = now
 	}
 	modelID := q.Get("modelId")
 	report, err := h.getMonitoringUC.Execute(r.Context(), from, to, modelID)

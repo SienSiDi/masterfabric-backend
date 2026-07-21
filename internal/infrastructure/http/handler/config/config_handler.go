@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 
 	"github.com/masterfabric/masterfabric_backend/internal/domain/config/model"
@@ -30,8 +31,12 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	var req model.AppConfig
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := json.NewDecoder(io.LimitReader(r.Body, 4096)).Decode(&req); err != nil {
 		response.Error(w, domainerr.New(domainerr.CodeBadRequest, "invalid JSON body", err))
+		return
+	}
+	if req.Limits.MaxPromptChars <= 0 || req.Limits.RatePerMin <= 0 {
+		response.Error(w, domainerr.New(domainerr.CodeBadRequest, "limits.maxPromptChars and limits.ratePerMin must be positive", nil))
 		return
 	}
 	cfg, err := h.updateUC.Execute(r.Context(), &req)

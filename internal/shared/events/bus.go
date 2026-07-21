@@ -48,8 +48,18 @@ func (b *inProcessBus) Publish(ctx context.Context, event Event) error {
 	b.mu.RLock()
 	hs := b.handlers[event.Topic]
 	b.mu.RUnlock()
-	for _, h := range hs {
-		if err := h(ctx, event); err != nil {
+	var wg sync.WaitGroup
+	errs := make([]error, len(hs))
+	for i, h := range hs {
+		wg.Add(1)
+		go func(fn Handler, idx int) {
+			defer wg.Done()
+			errs[idx] = fn(ctx, event)
+		}(h, i)
+	}
+	wg.Wait()
+	for _, err := range errs {
+		if err != nil {
 			return err
 		}
 	}

@@ -11,19 +11,31 @@ import (
 func JSON(w http.ResponseWriter, status int, body any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(body)
+	b, err := json.Marshal(body)
+	if err != nil {
+		return
+	}
+	_, _ = w.Write(b)
 }
 
 func Created(w http.ResponseWriter, body any) { JSON(w, http.StatusCreated, body) }
 func NoContent(w http.ResponseWriter)        { w.WriteHeader(http.StatusNoContent) }
 
+type errorBody struct {
+	Error struct {
+		Code    string `json:"code"`
+		Message string `json:"message"`
+	} `json:"error"`
+}
+
 func Error(w http.ResponseWriter, err error) {
 	de, ok := domainerr.As(err)
 	if !ok {
 		slog.Error("internal error", "error", err)
-		JSON(w, http.StatusInternalServerError, map[string]any{
-			"error": map[string]any{"code": string(domainerr.CodeInternal), "message": "an internal error occurred"},
-		})
+		eb := errorBody{}
+		eb.Error.Code = string(domainerr.CodeInternal)
+		eb.Error.Message = "an internal error occurred"
+		JSON(w, http.StatusInternalServerError, eb)
 		return
 	}
 	status := mapStatus(de.Code)
@@ -32,9 +44,10 @@ func Error(w http.ResponseWriter, err error) {
 	} else {
 		slog.Debug("client error", "code", de.Code, "message", de.Message)
 	}
-	JSON(w, status, map[string]any{
-		"error": map[string]any{"code": string(de.Code), "message": de.Message},
-	})
+	eb := errorBody{}
+	eb.Error.Code = string(de.Code)
+	eb.Error.Message = de.Message
+	JSON(w, status, eb)
 }
 
 func mapStatus(c domainerr.Code) int {

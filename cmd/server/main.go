@@ -89,7 +89,7 @@ func main() {
 	sessionRepo := llmpg.NewSessionRepository(pool)
 	eventRepo := llmpg.NewEventRepository(pool)
 	scoreRepo := llmpg.NewScoreRepository(pool)
-	monitoringRepo := llmpg.NewMonitoringRepository(pool)
+	monitoringRepo := llmpg.NewCachedMonitoringRepository(llmpg.NewMonitoringRepository(pool), 5*time.Minute)
 	listModelsUC := llmusecase.NewListModelsUseCase()
 	createSessUC := llmusecase.NewCreateSessionUseCase(sessionRepo, eventBus)
 	getSessUC := llmusecase.NewGetSessionUseCase(sessionRepo)

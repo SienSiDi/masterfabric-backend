@@ -82,5 +82,5 @@ type UpdateMeRequest struct {
 
 type ChangePasswordRequest struct {
 	CurrentPassword string `json:"currentPassword" validate:"required"`
-	NewPassword     string `json:"newPassword" validate:"required,min=12"`
+	NewPassword     string `json:"newPassword" validate:"required,min=12,max=128"`
 }

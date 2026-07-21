@@ -2,7 +2,6 @@ package errors
 
 import (
 	stderrors "errors"
-	"fmt"
 )
 
 type Code string
@@ -35,9 +34,9 @@ type DomainError struct {
 
 func (e *DomainError) Error() string {
 	if e.Cause != nil {
-		return fmt.Sprintf("%s: %s: %v", e.Code, e.Message, e.Cause)
+		return string(e.Code) + ": " + e.Message + ": " + e.Cause.Error()
 	}
-	return fmt.Sprintf("%s: %s", e.Code, e.Message)
+	return string(e.Code) + ": " + e.Message
 }
 
 func (e *DomainError) Unwrap() error { return e.Cause }

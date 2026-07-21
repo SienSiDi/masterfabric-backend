@@ -77,7 +77,7 @@ func New(deps Deps) http.Handler {
 
 	r.Get("/health/live", cmnH.Live)
 	r.Get("/health/ready", cmnH.Ready)
-	r.Handle("/metrics", telemetry.MetricsHandler())
+	r.With(authMW).Handle("/metrics", telemetry.MetricsHandler())
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/config", cfgH.Get)
@@ -125,7 +125,7 @@ func loginRateKey(r *http.Request) string {
 	if r.Body == nil {
 		return "login:ip:" + clientIP(r)
 	}
-	raw, err := io.ReadAll(r.Body)
+	raw, err := io.ReadAll(io.LimitReader(r.Body, 512))
 	r.Body.Close()
 	r.Body = io.NopCloser(bytes.NewReader(raw))
 	if err == nil && len(raw) > 0 {
@@ -190,16 +190,14 @@ func refreshRateKey(r *http.Request) string {
 	return "refresh:ip:" + clientIP(r)
 }
 
-// eventRateKey rate-limits event recording per user (user_id is in the JWT context,
-// but middleware runs before the handler — so we extract user_id from the JWT here
-// via a lightweight parse. For simplicity we use the client IP as a fallback.)
+// eventRateKey rate-limits event recording per user. Uses SHA256 of the JWT
+// to avoid storing the full token in Redis keys.
 func eventRateKey(r *http.Request) string {
-	// The auth middleware has already run by the time this is invoked (we're inside
-	// the authenticated group). We can't easily read the context here, so we use
-	// the Authorization header's hash as the key — a stable per-user identifier.
 	auth := r.Header.Get("Authorization")
 	if len(auth) > 7 {
-		return "llm:events:" + auth[7:] // skip "Bearer "
+		token := auth[7:]
+		h := sha256.Sum256([]byte(token))
+		return "llm:events:" + hex.EncodeToString(h[:8])
 	}
 	return "llm:events:ip:" + clientIP(r)
 }

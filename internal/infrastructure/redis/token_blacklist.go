@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+
+	domainerr "github.com/masterfabric/masterfabric_backend/internal/shared/errors"
 )
 
 // TokenBlacklist stores revoked refresh-token hashes in Redis with a TTL equal to
@@ -37,14 +39,14 @@ func (b *TokenBlacklist) Revoke(ctx context.Context, tokenHash string, ttl time.
 }
 
 // IsRevoked reports whether the token hash is on the blacklist.
-// If Redis is unavailable, returns false (fail open — don't block users).
+// If Redis is unavailable, returns an error (fail closed — block all refresh attempts).
 func (b *TokenBlacklist) IsRevoked(ctx context.Context, tokenHash string) (bool, error) {
 	if b.client == nil {
-		return false, nil
+		return false, domainerr.New(domainerr.CodeInternal, "blacklist unavailable", nil)
 	}
 	n, err := b.client.Exists(ctx, blacklistKey(tokenHash)).Result()
 	if err != nil {
-		return false, nil // fail open
+		return false, domainerr.New(domainerr.CodeInternal, "blacklist query failed", err)
 	}
 	return n > 0, nil
 }

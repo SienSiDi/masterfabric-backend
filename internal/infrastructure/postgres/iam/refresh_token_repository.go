@@ -93,6 +93,7 @@ func (r *RefreshTokenRepository) ListByUser(ctx context.Context, userID uuid.UUI
 		FROM refresh_tokens
 		WHERE user_id = $1
 		ORDER BY created_at DESC
+		LIMIT 50
 	`, userID)
 	if err != nil {
 		return nil, domainerr.New(domainerr.CodeInternal, "list refresh tokens by user", fmt.Errorf("query refresh_tokens: %w", err))
